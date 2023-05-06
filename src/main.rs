@@ -1,4 +1,3 @@
-use etherparse::{Ipv4HeaderSlice, ReadError};
 use std::io;
 
 fn main() -> io::Result<()> {
@@ -12,24 +11,23 @@ fn main() -> io::Result<()> {
             // not ipv4
             break;
         }
-        match etherparse::TcpHeaderSlice::from_slice(&buf[4..bytes]) {
+        match etherparse::Ipv4HeaderSlice::from_slice(&buf[4..bytes]) {
             Ok(packet) => {
                 let src = packet.source_addr();
                 let dst = packet.destination_addr();
                 let proto = packet.protocol();
                 eprintln!(
-                    "{} -> {} {}b tcp to port {}",
+                    "{} -> {} {}b of protocol {:x}",
                     src,
                     dst,
-                    packet.slice().len(),
-                    packet.destination_port()
+                    packet.payload_len(),
+                    proto
                 );
             }
             Err(e) => {
                 eprintln!("ignoring weird tcp packet: {:?}", e);
             }
         }
-        eprintln!("recv: {} bytes: {:?}", recv - 4, &buf[4..recv]);
     }
     Ok(())
 }
