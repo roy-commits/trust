@@ -12,20 +12,31 @@ fn main() -> io::Result<()> {
             break;
         }
         match etherparse::Ipv4HeaderSlice::from_slice(&buf[4..bytes]) {
-            Ok(packet) => {
-                let src = packet.source_addr();
-                let dst = packet.destination_addr();
-                let proto = packet.protocol();
-                eprintln!(
-                    "{} -> {} {}b of protocol {:x}",
-                    src,
-                    dst,
-                    packet.payload_len(),
-                    proto
-                );
+            Ok(p) => {
+                let src = p.source_addr();
+                let dst = p.destination_addr();
+                let proto = p.protocol();
+                if proto != 0x06 {
+                    // not tcp protocol
+                    break;
+                }
+                match etherparse::TcpHeaderSlice::from_slice(&buf[4 + p.slice().len()..]) {
+                    Ok(p) => {
+                        eprintln!(
+                            "{} -> {} {}b of tcp to port: {}",
+                            src,
+                            dst,
+                            p.slice().len(),
+                            p.destination_port()
+                        );
+                    }
+                    Err(e) => {
+                        eprintln!("ignoring weird tcp packet: {:?}", e);
+                    }
+                }
             }
             Err(e) => {
-                eprintln!("ignoring weird tcp packet: {:?}", e);
+                eprintln!("ignoring weird packet: {:?}", e);
             }
         }
     }
